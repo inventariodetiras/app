@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Inventario</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #2ecc71;
+            --warning: #f39c12;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding-bottom: 60px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, #1a2530 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        h1, h2, h3 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .auth-container {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 14px;
+            margin: 2px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, var(--secondary), #2980b9);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(to right, #2980b9, var(--secondary));
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(to right, var(--accent), #c0392b);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(to right, #c0392b, var(--accent));
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: linear-gradient(to right, var(--success), #27ae60);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(to right, #27ae60, var(--success));
+            transform: translateY(-2px);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(to right, var(--warning), #e67e22);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: linear-gradient(to right, #e67e22, var(--warning));
+            transform: translateY(-2px);
+        }
+        
+        .btn-sm {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        input[type="text"], 
+        input[type="file"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            border-color: var(--secondary);
+            outline: none;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+        }
+        
+        .checkbox-group input {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .inventory-table th, 
+        .inventory-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .inventory-table th {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .inventory-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .inventory-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .special-badge {
+            background: linear-gradient(to right, var(--accent), #c0392b);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .complete-badge {
+            background: linear-gradient(to right, var(--success), #27ae60);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #7f8c8d;
+            border-top: 1px solid #ddd;
+            background: white;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            min-width: 150px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .inventory-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            .stats {
+                flex-direction: column;
+            }
+            
+            .card {
+                padding: 1rem;
+            }
+            
+            .inventory-table td {
+                min-width: 120px;
+            }
+        }
+        
+        /* Loader */
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--secondary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: white;
+            border-left: 5px solid var(--success);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 5px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.error {
+            border-left-color: var(--accent);
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Control de Inventario</h1>
+            <p>Sistema De Gestión De Tiras</p>
+            <div id="user-info" class="user-info hidden">
+                <img id="user-avatar" class="user-avatar" src="" alt="Avatar">
+                <span id="user-name"></span>
+                <button id="sign-out" class="btn btn-warning"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
+            </div>
+        </header>
+        
+        <div id="auth-container" class="auth-container">
+            <h2>Iniciar Sesión</h2>
+            <p>Para acceder al sistema, inicia sesión con tu cuenta de Google</p>
+            <button id="google-login" class="btn btn-primary"><i class="fab fa-google"></i> Iniciar sesión con Google</button>
+        </div>
+        
+        <div id="app-container" class="hidden">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-items">0</div>
+                    <div class="stat-label">Total en inventario</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="special-items">0</div>
+                    <div class="stat-label">Especiales</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="complete-items">0</div>
+                    <div class="stat-label">Completas</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2><i class="fas fa-plus-circle"></i> Agregar Espuma Manualmente</h2>
+                <form id="add-form">
+                    <div class="form-group">
+                        <label for="density">Densidad:</label>
+                        <input type="text" id="density" required placeholder="Ej: 25 kg/m³">
+                    </div>
+                    <div class="form-group">
+                        <label for="batch">Lote:</label>
+                        <input type="text" id="batch" required placeholder="Ej: LT-2023-001">
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="special">
+                        <label for="special">Marcar como especial</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Agregar al Inventario</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2><i class="fas fa-file-excel"></i> Cargar desde Archivo Excel</h2>
+                <p>El archivo debe tener columnas: "Densidad" y "Lote". Se reemplazará todo el inventario actual.</p>
+                <div class="form-group">
+                    <input type="file" id="excel-file" accept=".xlsx, .xls">
+                </div>
+                <button id="upload-excel" class="btn btn-success"><i class="fas fa-upload"></i> Subir y Reemplazar Inventario</button>
+            </div>
+            
+            <div class="card">
+                <h2><i class="fas fa-boxes"></i> Inventario Actual</h2>
+                <div id="inventory-loader" class="loader hidden"></div>
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Densidad</th>
+                            <th>Lote</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-list">
+                        <!-- Los datos se cargarán dinámicamente con JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Versión 2.5 diseñado por Eduardo Gutiérrez ® 2025</p>
+        </footer>
+    </div>
+
+    <div id="notification" class="notification">
+        <span id="notification-message"></span>
+    </div>
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <!-- Firebase Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase Authentication -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <!-- SheetJS para procesar Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        // Configuración de Firebase (debes reemplazar con tus propios valores)
+        const firebaseConfig = {
+ 		 apiKey: "AIzaSyAsFdFibCw-hiyK_v5DwWh5TRHsCxy2MQ0",
+ 		 authDomain: "base-de-datos-especial.firebaseapp.com",
+ 		 projectId: "base-de-datos-especial",
+ 		 storageBucket: "base-de-datos-especial.firebasestorage.app",
+ 		 messagingSenderId: "669209117176",
+ 		 appId: "1:669209117176:web:aa0b68eedbf86bde08960d"
+	};
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        // Referencias a elementos del DOM
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const userInfo = document.getElementById('user-info');
+        const userAvatar = document.getElementById('user-avatar');
+        const userName = document.getElementById('user-name');
+        const signOutBtn = document.getElementById('sign-out');
+        const googleLoginBtn = document.getElementById('google-login');
+        const addForm = document.getElementById('add-form');
+        const densityInput = document.getElementById('density');
+        const batchInput = document.getElementById('batch');
+        const specialCheckbox = document.getElementById('special');
+        const excelFileInput = document.getElementById('excel-file');
+        const uploadExcelBtn = document.getElementById('upload-excel');
+        const inventoryList = document.getElementById('inventory-list');
+        const inventoryLoader = document.getElementById('inventory-loader');
+        const totalItems = document.getElementById('total-items');
+        const specialItems = document.getElementById('special-items');
+        const completeItems = document.getElementById('complete-items');
+        const notification = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notification-message');
+        
+        // Mostrar notificación
+        function showNotification(message, isError = false) {
+            notificationMessage.textContent = message;
+            notification.classList.add('show');
+            if (isError) {
+                notification.classList.add('error');
+            } else {
+                notification.classList.remove('error');
+            }
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Estado de autenticación
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // Usuario autenticado
+                authContainer.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                userInfo.classList.remove('hidden');
+                
+                // Mostrar información del usuario
+                userAvatar.src = user.photoURL;
+                userName.textContent = user.displayName;
+                
+                loadInventory();
+            } else {
+                // Usuario no autenticado
+                authContainer.classList.remove('hidden');
+                appContainer.classList.add('hidden');
+                userInfo.classList.add('hidden');
+            }
+        });
+        
+        // Iniciar sesión con Google
+        googleLoginBtn.addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then(result => {
+                    showNotification('Sesión iniciada correctamente');
+                })
+                .catch(error => {
+                    console.error('Error en autenticación:', error);
+                    showNotification('Error al iniciar sesión: ' + error.message, true);
+                });
+        });
+        
+        // Cerrar sesión
+        signOutBtn.addEventListener('click', () => {
+            auth.signOut()
+                .then(() => {
+                    showNotification('Sesión cerrada correctamente');
+                })
+                .catch(error => {
+                    console.error('Error al cerrar sesión:', error);
+                    showNotification('Error al cerrar sesión: ' + error.message, true);
+                });
+        });
+        
+        // Agregar nuevo elemento al inventario
+        addForm.addEventListener('submit', e => {
+            e.preventDefault();
+            
+            const density = densityInput.value.trim();
+            const batch = batchInput.value.trim();
+            const isSpecial = specialCheckbox.checked;
+            
+            if (density && batch) {
+                db.collection('inventory').add({
+                    density: density,
+                    batch: batch,
+                    special: isSpecial,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                })
+                .then(() => {
+                    densityInput.value = '';
+                    batchInput.value = '';
+                    specialCheckbox.checked = false;
+                    showNotification('Elemento agregado correctamente');
+                })
+                .catch(error => {
+                    console.error('Error al agregar:', error);
+                    showNotification('Error al agregar el elemento: ' + error.message, true);
+                });
+            } else {
+                showNotification('Por favor, completa todos los campos', true);
+            }
+        });
+        
+        // Cargar y procesar archivo Excel
+        uploadExcelBtn.addEventListener('click', () => {
+            const file = excelFileInput.files[0];
+            if (!file) {
+                showNotification('Por favor, selecciona un archivo Excel', true);
+                return;
+            }
+            
+            if (!confirm('¿Estás seguro? Esta acción reemplazará todo el inventario actual.')) {
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // Suponiendo que la primera hoja contiene los datos
+                const firstSheet = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheet];
+                
+                // Convertir a JSON
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                
+                // Validar estructura
+                if (jsonData.length === 0 || !jsonData[0].hasOwnProperty('Densidad') || !jsonData[0].hasOwnProperty('Lote')) {
+                    showNotification('El archivo Excel debe contener columnas "Densidad" y "Lote".', true);
+                    return;
+                }
+                
+                // Eliminar inventario existente y agregar nuevos datos
+                deleteAllInventory()
+                    .then(() => {
+                        const batch = db.batch();
+                        const inventoryRef = db.collection('inventory');
+                        
+                        jsonData.forEach(item => {
+                            const newDocRef = inventoryRef.doc();
+                            batch.set(newDocRef, {
+                                density: item.Densidad.toString(),
+                                batch: item.Lote.toString(),
+                                special: false,
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        });
+                        
+                        return batch.commit();
+                    })
+                    .then(() => {
+                        showNotification('Inventario actualizado correctamente desde el archivo Excel.');
+                        excelFileInput.value = '';
+                    })
+                    .catch(error => {
+                        console.error('Error al procesar Excel:', error);
+                        showNotification('Error al procesar el archivo Excel: ' + error.message, true);
+                    });
+            };
+            reader.readAsArrayBuffer(file);
+        });
+        
+        // Cargar inventario desde Firestore
+        function loadInventory() {
+            inventoryLoader.classList.remove('hidden');
+            inventoryList.innerHTML = '';
+            
+            db.collection('inventory')
+                .orderBy('timestamp', 'desc')
+                .onSnapshot(snapshot => {
+                    let total = 0;
+                    let specialCount = 0;
+                    let completeCount = 0;
+                    
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added') {
+                            addInventoryItem(change.doc);
+                            total++;
+                            if (change.doc.data().special) {
+                                specialCount++;
+                            } else {
+                                completeCount++;
+                            }
+                        } else if (change.type === 'removed') {
+                            removeInventoryItem(change.doc.id);
+                            total--;
+                            if (change.doc.data().special) {
+                                specialCount--;
+                            } else {
+                                completeCount--;
+                            }
+                        } else if (change.type === 'modified') {
+                            updateInventoryItem(change.doc);
+                            // Recalcular estadísticas
+                            specialCount = 0;
+                            completeCount = 0;
+                            snapshot.forEach(doc => {
+                                if (doc.data().special) {
+                                    specialCount++;
+                                } else {
+                                    completeCount++;
+                                }
+                            });
+                            total = specialCount + completeCount;
+                        }
+                    });
+                    
+                    // Actualizar estadísticas
+                    totalItems.textContent = total;
+                    specialItems.textContent = specialCount;
+                    completeItems.textContent = completeCount;
+                    
+                    inventoryLoader.classList.add('hidden');
+                }, error => {
+                    console.error('Error en listener:', error);
+                    inventoryLoader.classList.add('hidden');
+                    showNotification('Error al cargar el inventario: ' + error.message, true);
+                });
+        }
+        
+        // Añadir elemento a la lista del inventario
+        function addInventoryItem(doc) {
+            const data = doc.data();
+            const row = document.createElement('tr');
+            row.id = doc.id;
+            
+            row.innerHTML = `
+                <td>${data.density}</td>
+                <td>${data.batch}</td>
+                <td>${data.special ? '<span class="special-badge"><i class="fas fa-star"></i> Especial</span>' : '<span class="complete-badge"><i class="fas fa-check"></i> Completa</span>'}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-warning btn-sm toggle-status-btn" data-id="${doc.id}">
+                            <i class="fas fa-exchange-alt"></i> Cambiar Estado
+                        </button>
+                        <button class="btn btn-danger btn-sm use-btn" data-id="${doc.id}">
+                            <i class="fas fa-check-circle"></i> Usar
+                        </button>
+                    </div>
+                </td>
+            `;
+            
+            inventoryList.appendChild(row);
+            
+            // Agregar evento al botón "Cambiar Estado"
+            row.querySelector('.toggle-status-btn').addEventListener('click', e => {
+                const id = e.target.closest('.toggle-status-btn').getAttribute('data-id');
+                toggleItemStatus(id);
+            });
+            
+            // Agregar evento al botón "Usar"
+            row.querySelector('.use-btn').addEventListener('click', e => {
+                const id = e.target.closest('.use-btn').getAttribute('data-id');
+                useInventoryItem(id);
+            });
+        }
+        
+        // Actualizar elemento en la lista del inventario
+        function updateInventoryItem(doc) {
+            const data = doc.data();
+            const row = document.getElementById(doc.id);
+            
+            if (row) {
+                row.innerHTML = `
+                    <td>${data.density}</td>
+                    <td>${data.batch}</td>
+                    <td>${data.special ? '<span class="special-badge"><i class="fas fa-star"></i> Especial</span>' : '<span class="complete-badge"><i class="fas fa-check"></i> Completa</span>'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-warning btn-sm toggle-status-btn" data-id="${doc.id}">
+                                <i class="fas fa-exchange-alt"></i> Cambiar Estado
+                            </button>
+                            <button class="btn btn-danger btn-sm use-btn" data-id="${doc.id}">
+                                <i class="fas fa-check-circle"></i> Usar
+                            </button>
+                        </div>
+                    </td>
+                `;
+                
+                // Agregar evento al botón "Cambiar Estado"
+                row.querySelector('.toggle-status-btn').addEventListener('click', e => {
+                    const id = e.target.closest('.toggle-status-btn').getAttribute('data-id');
+                    toggleItemStatus(id);
+                });
+                
+                // Agregar evento al botón "Usar"
+                row.querySelector('.use-btn').addEventListener('click', e => {
+                    const id = e.target.closest('.use-btn').getAttribute('data-id');
+                    useInventoryItem(id);
+                });
+            }
+        }
+        
+        // Eliminar elemento de la lista del inventario
+        function removeInventoryItem(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.remove();
+            }
+        }
+        
+        // Cambiar el estado del artículo (Completa/Especial)
+        function toggleItemStatus(id) {
+            const docRef = db.collection('inventory').doc(id);
+            
+            db.runTransaction(transaction => {
+                return transaction.get(docRef).then(doc => {
+                    if (!doc.exists) {
+                        throw new Error("El documento no existe");
+                    }
+                    
+                    const newSpecialStatus = !doc.data().special;
+                    transaction.update(docRef, { special: newSpecialStatus });
+                    
+                    return newSpecialStatus;
+                });
+            }).then(newSpecialStatus => {
+                showNotification(`Estado cambiado a ${newSpecialStatus ? 'Especial' : 'Completa'} correctamente`);
+            }).catch(error => {
+                console.error('Error al cambiar estado:', error);
+                showNotification('Error al cambiar el estado: ' + error.message, true);
+            });
+        }
+        
+        // Usar/eliminar elemento del inventario
+        function useInventoryItem(id) {
+            if (confirm('¿Estás seguro de que deseas marcar este elemento como usado? Se eliminará del inventario.')) {
+                db.collection('inventory').doc(id).delete()
+                    .then(() => {
+                        showNotification('Elemento marcado como usado y eliminado del inventario');
+                    })
+                    .catch(error => {
+                        console.error('Error al eliminar:', error);
+                        showNotification('Error al eliminar el elemento: ' + error.message, true);
+                    });
+            }
+        }
+        
+        // Eliminar todo el inventario (para uso con Excel)
+        function deleteAllInventory() {
+            return db.collection('inventory').get().then(snapshot => {
+                const batch = db.batch();
+                snapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                return batch.commit();
+            });
+        }
+    </script>
+</body>
+</html>
