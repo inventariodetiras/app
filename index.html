@@ -120,6 +120,16 @@
             font-size: 12px;
         }
         
+        .btn-info {
+            background: linear-gradient(to right, #17a2b8, #138496);
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: linear-gradient(to right, #138496, #17a2b8);
+            transform: translateY(-2px);
+        }
+        
         .card {
             background: white;
             border-radius: 10px;
@@ -140,7 +150,8 @@
         }
         
         input[type="text"], 
-        input[type="file"] {
+        input[type="file"],
+        input[type="search"] {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #ddd;
@@ -149,7 +160,8 @@
             transition: border-color 0.3s;
         }
         
-        input[type="text"]:focus {
+        input[type="text"]:focus,
+        input[type="search"]:focus {
             border-color: var(--secondary);
             outline: none;
         }
@@ -341,6 +353,29 @@
             flex-wrap: wrap;
             gap: 5px;
         }
+        
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .search-input {
+            flex: 1;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        .search-info {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
     </style>
 </head>
 <body>
@@ -407,6 +442,18 @@
             
             <div class="card">
                 <h2><i class="fas fa-boxes"></i> Inventario Actual</h2>
+                
+                <div class="search-container">
+                    <div class="search-input">
+                        <input type="search" id="search-input" placeholder="Buscar por densidad o lote...">
+                    </div>
+                    <button id="clear-search" class="btn btn-info"><i class="fas fa-times"></i> Limpiar</button>
+                </div>
+                
+                <div id="search-info" class="search-info hidden">
+                    Mostrando <span id="filtered-count">0</span> de <span id="total-count">0</span> elementos
+                </div>
+                
                 <div id="inventory-loader" class="loader hidden"></div>
                 <table class="inventory-table">
                     <thead>
@@ -421,6 +468,11 @@
                         <!-- Los datos se cargarán dinámicamente con JavaScript -->
                     </tbody>
                 </table>
+                
+                <div id="no-results" class="no-results hidden">
+                    <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>No se encontraron resultados para su búsqueda</p>
+                </div>
             </div>
         </div>
         
@@ -443,18 +495,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
-        // Configuración de Firebase (debes reemplazar con tus propios valores)
-        const firebaseConfig = {
- 		 apiKey: "AIzaSyAsFdFibCw-hiyK_v5DwWh5TRHsCxy2MQ0",
- 		 authDomain: "base-de-datos-especial.firebaseapp.com",
- 		 projectId: "base-de-datos-especial",
- 		 storageBucket: "base-de-datos-especial.firebasestorage.app",
- 		 messagingSenderId: "669209117176",
- 		 appId: "1:669209117176:web:aa0b68eedbf86bde08960d"
-	};
+        // Técnica básica de ofuscación (no es completamente segura pero añade una capa adicional)
+        function decodeFirebaseConfig(encoded) {
+            return JSON.parse(atob(encoded));
+        }
         
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
+        // Configuración de Firebase (ligeramente ofuscada)
+        const encodedConfig = 'eyJhcGlLZXkiOiJBSXphU3lBc0ZkRmliQ3ctaGl5S192NUR3V2g1VFJIc0N4eTJNUTAiLCJhdXRoRG9tYWluIjoiYmFzZS1kZS1kYXRvcy1lc3BlY2lhbC5maXJlYmFzZWFwcC5jb20iLCJwcm9qZWN0SWQiOiJiYXNlLWRlLWRhdG9zLWVzcGVjaWFsIiwic3RvcmFnZUJ1Y2tldCI6ImJhc2UtZGUtZGF0b3MtZXNwZWNpYWwuZmlyZWJhc2VzdG9yYWdlLmFwcCIsIm1lc3NhZ2luZ1NlbmRlcklkIjoiNjY5MjA5MTE3MTc2IiwiYXBwSWQiOiIxOjY2OTIwOTExNzE3Njp3ZWI6YWEwYjY4ZWVkYmY4NmJkZTA4OTYwZCJ9';
+        
+        try {
+            const firebaseConfig = decodeFirebaseConfig(encodedConfig);
+            // Inicializar Firebase
+            firebase.initializeApp(firebaseConfig);
+        } catch (error) {
+            console.error('Error inicializando Firebase:', error);
+            document.getElementById('auth-container').innerHTML = `
+                <h2>Error de Configuración</h2>
+                <p>Ha ocurrido un error al inicializar la aplicación. Por favor, contacta al administrador.</p>
+            `;
+        }
+        
         const db = firebase.firestore();
         const auth = firebase.auth();
         
@@ -479,6 +539,16 @@
         const completeItems = document.getElementById('complete-items');
         const notification = document.getElementById('notification');
         const notificationMessage = document.getElementById('notification-message');
+        const searchInput = document.getElementById('search-input');
+        const clearSearchBtn = document.getElementById('clear-search');
+        const noResults = document.getElementById('no-results');
+        const searchInfo = document.getElementById('search-info');
+        const filteredCount = document.getElementById('filtered-count');
+        const totalCount = document.getElementById('total-count');
+        
+        // Variables para almacenar datos
+        let allInventoryItems = [];
+        let filteredInventoryItems = [];
         
         // Mostrar notificación
         function showNotification(message, isError = false) {
@@ -639,42 +709,27 @@
             db.collection('inventory')
                 .orderBy('timestamp', 'desc')
                 .onSnapshot(snapshot => {
+                    allInventoryItems = [];
                     let total = 0;
                     let specialCount = 0;
                     let completeCount = 0;
                     
-                    snapshot.docChanges().forEach(change => {
-                        if (change.type === 'added') {
-                            addInventoryItem(change.doc);
-                            total++;
-                            if (change.doc.data().special) {
-                                specialCount++;
-                            } else {
-                                completeCount++;
-                            }
-                        } else if (change.type === 'removed') {
-                            removeInventoryItem(change.doc.id);
-                            total--;
-                            if (change.doc.data().special) {
-                                specialCount--;
-                            } else {
-                                completeCount--;
-                            }
-                        } else if (change.type === 'modified') {
-                            updateInventoryItem(change.doc);
-                            // Recalcular estadísticas
-                            specialCount = 0;
-                            completeCount = 0;
-                            snapshot.forEach(doc => {
-                                if (doc.data().special) {
-                                    specialCount++;
-                                } else {
-                                    completeCount++;
-                                }
-                            });
-                            total = specialCount + completeCount;
+                    snapshot.forEach(doc => {
+                        allInventoryItems.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                        
+                        total++;
+                        if (doc.data().special) {
+                            specialCount++;
+                        } else {
+                            completeCount++;
                         }
                     });
+                    
+                    // Aplicar filtro de búsqueda si existe
+                    applySearchFilter();
                     
                     // Actualizar estadísticas
                     totalItems.textContent = total;
@@ -689,64 +744,64 @@
                 });
         }
         
-        // Añadir elemento a la lista del inventario
-        function addInventoryItem(doc) {
-            const data = doc.data();
-            const row = document.createElement('tr');
-            row.id = doc.id;
+        // Aplicar filtro de búsqueda
+        function applySearchFilter() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
             
-            row.innerHTML = `
-                <td>${data.density}</td>
-                <td>${data.batch}</td>
-                <td>${data.special ? '<span class="special-badge"><i class="fas fa-star"></i> Especial</span>' : '<span class="complete-badge"><i class="fas fa-check"></i> Completa</span>'}</td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn btn-warning btn-sm toggle-status-btn" data-id="${doc.id}">
-                            <i class="fas fa-exchange-alt"></i> Cambiar Estado
-                        </button>
-                        <button class="btn btn-danger btn-sm use-btn" data-id="${doc.id}">
-                            <i class="fas fa-check-circle"></i> Usar
-                        </button>
-                    </div>
-                </td>
-            `;
+            if (searchTerm === '') {
+                filteredInventoryItems = [...allInventoryItems];
+            } else {
+                filteredInventoryItems = allInventoryItems.filter(item => {
+                    return item.density.toLowerCase().includes(searchTerm) || 
+                           item.batch.toLowerCase().includes(searchTerm);
+                });
+            }
             
-            inventoryList.appendChild(row);
+            renderInventoryList();
             
-            // Agregar evento al botón "Cambiar Estado"
-            row.querySelector('.toggle-status-btn').addEventListener('click', e => {
-                const id = e.target.closest('.toggle-status-btn').getAttribute('data-id');
-                toggleItemStatus(id);
-            });
+            // Actualizar información de búsqueda
+            filteredCount.textContent = filteredInventoryItems.length;
+            totalCount.textContent = allInventoryItems.length;
             
-            // Agregar evento al botón "Usar"
-            row.querySelector('.use-btn').addEventListener('click', e => {
-                const id = e.target.closest('.use-btn').getAttribute('data-id');
-                useInventoryItem(id);
-            });
+            if (searchTerm !== '') {
+                searchInfo.classList.remove('hidden');
+            } else {
+                searchInfo.classList.add('hidden');
+            }
         }
         
-        // Actualizar elemento en la lista del inventario
-        function updateInventoryItem(doc) {
-            const data = doc.data();
-            const row = document.getElementById(doc.id);
+        // Renderizar la lista de inventario
+        function renderInventoryList() {
+            inventoryList.innerHTML = '';
             
-            if (row) {
+            if (filteredInventoryItems.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            }
+            
+            noResults.classList.add('hidden');
+            
+            filteredInventoryItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.id = item.id;
+                
                 row.innerHTML = `
-                    <td>${data.density}</td>
-                    <td>${data.batch}</td>
-                    <td>${data.special ? '<span class="special-badge"><i class="fas fa-star"></i> Especial</span>' : '<span class="complete-badge"><i class="fas fa-check"></i> Completa</span>'}</td>
+                    <td>${item.density}</td>
+                    <td>${item.batch}</td>
+                    <td>${item.special ? '<span class="special-badge"><i class="fas fa-star"></i> Especial</span>' : '<span class="complete-badge"><i class="fas fa-check"></i> Completa</span>'}</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn btn-warning btn-sm toggle-status-btn" data-id="${doc.id}">
+                            <button class="btn btn-warning btn-sm toggle-status-btn" data-id="${item.id}">
                                 <i class="fas fa-exchange-alt"></i> Cambiar Estado
                             </button>
-                            <button class="btn btn-danger btn-sm use-btn" data-id="${doc.id}">
+                            <button class="btn btn-danger btn-sm use-btn" data-id="${item.id}">
                                 <i class="fas fa-check-circle"></i> Usar
                             </button>
                         </div>
                     </td>
                 `;
+                
+                inventoryList.appendChild(row);
                 
                 // Agregar evento al botón "Cambiar Estado"
                 row.querySelector('.toggle-status-btn').addEventListener('click', e => {
@@ -759,16 +814,18 @@
                     const id = e.target.closest('.use-btn').getAttribute('data-id');
                     useInventoryItem(id);
                 });
-            }
+            });
         }
         
-        // Eliminar elemento de la lista del inventario
-        function removeInventoryItem(id) {
-            const element = document.getElementById(id);
-            if (element) {
-                element.remove();
-            }
-        }
+        // Event listener para la búsqueda
+        searchInput.addEventListener('input', applySearchFilter);
+        
+        // Event listener para limpiar búsqueda
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            applySearchFilter();
+            searchInput.focus();
+        });
         
         // Cambiar el estado del artículo (Completa/Especial)
         function toggleItemStatus(id) {
